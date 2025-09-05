@@ -9,10 +9,10 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Bell, BellRing, AlertTriangle, CheckCircle, Eye } from "lucide-react"
 import AlertManagementService, { type Alert } from "@/lib/alert-system"
-import type { User } from "@/lib/auth"
+import type { User } from "@clerk/nextjs/server"
 
 interface AlertNotificationProps {
-  user: User
+  user: any // Change User to any to match Clerk's User object
   onOpenAlertCenter: () => void
 }
 
@@ -78,7 +78,7 @@ export function AlertNotification({ user, onOpenAlertCenter }: AlertNotification
 
   const handleQuickAcknowledge = (alertId: string, event: React.MouseEvent) => {
     event.stopPropagation()
-    alertService.acknowledgeAlert(alertId, user.email)
+    alertService.acknowledgeAlert(alertId, user.emailAddresses[0].emailAddress)
   }
 
   const activeAlertsCount = alerts.filter((alert) => alert.status === "active").length
@@ -97,11 +97,10 @@ export function AlertNotification({ user, onOpenAlertCenter }: AlertNotification
           )}
           {activeAlertsCount > 0 && (
             <Badge
-              className={`absolute -top-1 -right-1 h-5 w-5 p-0 text-xs ${
-                criticalAlertsCount > 0
+              className={`absolute -top-1 -right-1 h-5 w-5 p-0 text-xs ${criticalAlertsCount > 0
                   ? "bg-destructive text-destructive-foreground"
                   : "bg-secondary text-secondary-foreground"
-              }`}
+                }`}
               variant="secondary"
             >
               {activeAlertsCount > 9 ? "9+" : activeAlertsCount}

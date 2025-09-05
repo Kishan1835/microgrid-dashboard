@@ -1,3 +1,5 @@
+import type { User } from "@clerk/nextjs/server"
+
 export interface Alert {
   id: string
   title: string
@@ -410,11 +412,11 @@ class AlertManagementService {
     const averageResolutionTime =
       resolvedAlerts.length > 0
         ? resolvedAlerts.reduce((sum, alert) => {
-            const resolutionTime = alert.resolvedAt!.getTime() - alert.timestamp.getTime()
-            return sum + resolutionTime
-          }, 0) /
-          resolvedAlerts.length /
-          (1000 * 60) // Convert to minutes
+          const resolutionTime = alert.resolvedAt!.getTime() - alert.timestamp.getTime()
+          return sum + resolutionTime
+        }, 0) /
+        resolvedAlerts.length /
+        (1000 * 60) // Convert to minutes
         : 0
 
     const alertsByCategory = this.alerts.reduce(

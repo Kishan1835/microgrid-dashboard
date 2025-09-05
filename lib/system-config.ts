@@ -1,3 +1,5 @@
+import type { User } from "@clerk/nextjs/server"
+
 export interface SystemConfiguration {
   id: string
   category: "general" | "security" | "alerts" | "integrations" | "maintenance" | "compliance"

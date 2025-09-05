@@ -23,10 +23,10 @@ import {
   XCircle,
 } from "lucide-react"
 import SystemConfigurationService, { type SystemConfiguration } from "@/lib/system-config"
-import type { User } from "@/lib/auth"
+import type { User } from "@clerk/nextjs/server"
 
 interface SystemConfigurationProps {
-  user: User
+  user: any // Change User to any to match Clerk's User object
 }
 
 export function SystemConfigurationPanel({ user }: SystemConfigurationProps) {
@@ -59,7 +59,7 @@ export function SystemConfigurationPanel({ user }: SystemConfigurationProps) {
       let allSuccess = true
 
       for (const config of configurations) {
-        const success = configService.updateConfiguration(config.id, config.value, user.email)
+        const success = configService.updateConfiguration(config.id, config.value, user.emailAddresses[0].emailAddress)
         if (!success) {
           allSuccess = false
         }
@@ -93,7 +93,7 @@ export function SystemConfigurationPanel({ user }: SystemConfigurationProps) {
   }
 
   const renderConfigInput = (config: SystemConfiguration) => {
-    const isDisabled = config.isReadOnly || user.role === "viewer"
+    const isDisabled = config.isReadOnly || user?.publicMetadata?.role === "viewer"
 
     switch (config.dataType) {
       case "boolean":
@@ -213,7 +213,7 @@ export function SystemConfigurationPanel({ user }: SystemConfigurationProps) {
     }
   }
 
-  if (user.role === "viewer") {
+  if (user?.publicMetadata?.role === "viewer") {
     return (
       <Card>
         <CardHeader>

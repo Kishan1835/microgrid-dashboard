@@ -6,16 +6,16 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { SystemConfigurationPanel } from "./system-configuration"
 import { SystemHealthMonitor } from "./system-health"
 import { Settings, Activity, Users, Database, Shield } from "lucide-react"
-import type { User } from "@/lib/auth"
+import type { User } from "@clerk/nextjs/server"
 
 interface AdminPanelProps {
-  user: User
+  user: any // Change User to any to match Clerk's User object
 }
 
 export function AdminPanel({ user }: AdminPanelProps) {
   const [activeTab, setActiveTab] = useState("configuration")
 
-  if (user.role !== "admin") {
+  if (user?.publicMetadata?.role !== "admin") {
     return (
       <Card>
         <CardHeader>

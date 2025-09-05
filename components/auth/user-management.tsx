@@ -8,7 +8,7 @@ import { Switch } from "@/components/ui/switch"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Users, UserPlus, Shield, Eye, Settings } from "lucide-react"
-import { AuthService, type User } from "@/lib/auth"
+import { useUser } from "@clerk/nextjs"
 
 interface UserManagementProps {
   isOpen: boolean
@@ -16,8 +16,7 @@ interface UserManagementProps {
 }
 
 export function UserManagement({ isOpen, onClose }: UserManagementProps) {
-  const [users, setUsers] = useState<User[]>(AuthService.getInstance().getAllUsers())
-  const authService = AuthService.getInstance()
+  const { user } = useUser()
 
   const getRoleIcon = (role: string) => {
     switch (role) {
@@ -45,11 +44,30 @@ export function UserManagement({ isOpen, onClose }: UserManagementProps) {
     }
   }
 
-  const handleToggleUserStatus = (userId: string, isActive: boolean) => {
-    const success = authService.updateUserStatus(userId, isActive)
-    if (success) {
-      setUsers(authService.getAllUsers())
-    }
+  if (user?.publicMetadata?.role !== "admin") {
+    return (
+      <Dialog open={isOpen} onOpenChange={onClose}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Shield className="h-5 w-5 text-destructive" />
+              Access Denied
+            </DialogTitle>
+            <DialogDescription>
+              You do not have administrative privileges to access user management.
+            </DialogDescription>
+          </DialogHeader>
+          <CardContent>
+            <div className="text-center py-8">
+              <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <p className="text-muted-foreground">
+                Only administrators can manage user accounts. Please contact your system administrator.
+              </p>
+            </div>
+          </CardContent>
+        </DialogContent>
+      </Dialog>
+    )
   }
 
   return (
@@ -61,107 +79,43 @@ export function UserManagement({ isOpen, onClose }: UserManagementProps) {
             User Management
           </DialogTitle>
           <DialogDescription>
-            Manage user accounts, roles, and access permissions for the microgrid monitoring system.
+            User management is handled through the Clerk Dashboard. Click the button below to access it.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6">
-          <div className="flex items-center justify-between">
-            <div className="grid grid-cols-3 gap-4 flex-1">
-              <Card>
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-2">
-                    <Shield className="h-4 w-4 text-destructive" />
-                    <div>
-                      <p className="text-sm font-medium">Administrators</p>
-                      <p className="text-2xl font-bold">{users.filter((u) => u.role === "admin").length}</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-2">
-                    <Settings className="h-4 w-4 text-primary" />
-                    <div>
-                      <p className="text-sm font-medium">Operators</p>
-                      <p className="text-2xl font-bold">{users.filter((u) => u.role === "operator").length}</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-2">
-                    <Eye className="h-4 w-4 text-secondary" />
-                    <div>
-                      <p className="text-sm font-medium">Viewers</p>
-                      <p className="text-2xl font-bold">{users.filter((u) => u.role === "viewer").length}</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-            <Button className="ml-4">
-              <UserPlus className="mr-2 h-4 w-4" />
-              Add User
-            </Button>
-          </div>
+          <Card className="border-primary/20 bg-primary/5">
+            <CardContent className="p-6 text-center">
+              <Settings className="h-12 w-12 text-primary mx-auto mb-4" />
+              <h3 className="text-xl font-semibold text-primary mb-2">Manage Users in Clerk Dashboard</h3>
+              <p className="text-muted-foreground mb-4">
+                To add, edit, or remove users, and manage their roles and permissions, please visit the Clerk Dashboard.
+              </p>
+              <Button
+                onClick={() => window.open("https://dashboard.clerk.com/", "_blank")}
+                className="mt-4"
+              >
+                <UserPlus className="mr-2 h-4 w-4" />
+                Go to Clerk Dashboard
+              </Button>
+            </CardContent>
+          </Card>
 
           <Card>
             <CardHeader>
-              <CardTitle>User Accounts</CardTitle>
-              <CardDescription>Manage existing user accounts and their access levels.</CardDescription>
+              <CardTitle>Current User Role (Clerk)</CardTitle>
+              <CardDescription>Your current role as detected by Clerk.</CardDescription>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>User</TableHead>
-                    <TableHead>Role</TableHead>
-                    <TableHead>Department</TableHead>
-                    <TableHead>Last Login</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {users.map((user) => (
-                    <TableRow key={user.id}>
-                      <TableCell>
-                        <div>
-                          <p className="font-medium">{user.name}</p>
-                          <p className="text-sm text-muted-foreground">{user.email}</p>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge className={getRoleColor(user.role)} variant="secondary">
-                          <span className="mr-1">{getRoleIcon(user.role)}</span>
-                          {user.role.toUpperCase()}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>{user.department}</TableCell>
-                      <TableCell className="text-sm">{user.lastLogin.toLocaleDateString()}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Switch
-                            checked={user.isActive}
-                            onCheckedChange={(checked) => handleToggleUserStatus(user.id, checked)}
-                          />
-                          <span className="text-sm">{user.isActive ? "Active" : "Inactive"}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Button variant="outline" size="sm">
-                          Edit
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+              <Badge className={getRoleColor(user?.publicMetadata?.role as string)} variant="secondary">
+                <span className="mr-1">{getRoleIcon(user?.publicMetadata?.role as string)}</span>
+                {(user?.publicMetadata?.role as string)?.toUpperCase() || "N/A"}
+              </Badge>
+              <p className="text-sm text-muted-foreground mt-2">This application uses Clerk for user authentication and role management.</p>
             </CardContent>
           </Card>
+
+          {/* Removed previous mock user list and related functionalities */}
         </div>
       </DialogContent>
     </Dialog>

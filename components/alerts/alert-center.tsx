@@ -9,10 +9,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { AlertTriangle, CheckCircle, Clock, Filter, Bell, Eye, EyeOff, Settings, BarChart3, Zap } from "lucide-react"
 import AlertManagementService, { type Alert as SystemAlert, type AlertMetrics } from "@/lib/alert-system"
-import type { User } from "@/lib/auth"
+import type { User } from "@clerk/nextjs/server"
 
 interface AlertCenterProps {
-  user: User
+  user: any // Change User to any to match Clerk's User object
 }
 
 export function AlertCenter({ user }: AlertCenterProps) {
@@ -84,18 +84,18 @@ export function AlertCenter({ user }: AlertCenterProps) {
   }
 
   const handleAcknowledge = (alertId: string) => {
-    alertService.acknowledgeAlert(alertId, user.email)
+    alertService.acknowledgeAlert(alertId, user.emailAddresses[0].emailAddress)
   }
 
   const handleResolve = (alertId: string) => {
-    alertService.resolveAlert(alertId, user.email)
+    alertService.resolveAlert(alertId, user.emailAddresses[0].emailAddress)
   }
 
   const handleDismiss = (alertId: string) => {
     alertService.dismissAlert(alertId)
   }
 
-  const canManageAlerts = user.role === "admin" || user.role === "operator"
+  const canManageAlerts = user?.publicMetadata?.role === "admin" || user?.publicMetadata?.role === "operator"
 
   return (
     <div className="space-y-6">
@@ -405,7 +405,7 @@ export function AlertCenter({ user }: AlertCenterProps) {
                 <p className="text-muted-foreground">
                   Alert configuration interface would be implemented here for administrators
                 </p>
-                {user.role === "admin" && (
+                {user?.publicMetadata?.role === "admin" && (
                   <Button className="mt-4 bg-transparent" variant="outline">
                     Configure Alert Rules
                   </Button>

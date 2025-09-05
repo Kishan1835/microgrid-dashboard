@@ -11,16 +11,16 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { LogOut, Settings, Shield } from "lucide-react"
-import { AuthService, type User as UserType } from "@/lib/auth"
+import { UserButton, useUser } from "@clerk/nextjs"
 
 interface UserMenuProps {
-  user: UserType
+  user: any // Change UserType to any as Clerk user object is different
   onLogout: () => void
   onOpenUserManagement?: () => void
 }
 
 export function UserMenu({ user, onLogout, onOpenUserManagement }: UserMenuProps) {
-  const authService = AuthService.getInstance()
+  const { user: clerkUser } = useUser()
 
   const getRoleColor = (role: string) => {
     switch (role) {
@@ -43,51 +43,11 @@ export function UserMenu({ user, onLogout, onOpenUserManagement }: UserMenuProps
       .toUpperCase()
   }
 
+  if (!clerkUser) return null
+
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="relative h-10 w-10 rounded-full">
-          <Avatar className="h-10 w-10">
-            <AvatarFallback className="bg-primary/10 text-primary font-semibold">
-              {getInitials(user.name)}
-            </AvatarFallback>
-          </Avatar>
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent className="w-80" align="end" forceMount>
-        <DropdownMenuLabel className="font-normal">
-          <div className="flex flex-col space-y-2">
-            <div className="flex items-center gap-2">
-              <p className="text-sm font-medium leading-none">{user.name}</p>
-              <Badge className={getRoleColor(user.role)} variant="secondary">
-                {user.role.toUpperCase()}
-              </Badge>
-            </div>
-            <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
-            <p className="text-xs leading-none text-muted-foreground">{user.department}</p>
-            <p className="text-xs leading-none text-muted-foreground">Last login: {user.lastLogin.toLocaleString()}</p>
-          </div>
-        </DropdownMenuLabel>
-        <DropdownMenuSeparator />
-
-        {authService.hasPermission("admin") && onOpenUserManagement && (
-          <DropdownMenuItem onClick={onOpenUserManagement}>
-            <Shield className="mr-2 h-4 w-4" />
-            <span>User Management</span>
-          </DropdownMenuItem>
-        )}
-
-        <DropdownMenuItem>
-          <Settings className="mr-2 h-4 w-4" />
-          <span>Settings</span>
-        </DropdownMenuItem>
-
-        <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={onLogout} className="text-destructive focus:text-destructive">
-          <LogOut className="mr-2 h-4 w-4" />
-          <span>Log out</span>
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <div className="flex items-center gap-3">
+      <UserButton afterSignOutUrl="/" />
+    </div>
   )
 }

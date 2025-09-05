@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import ComplianceAuditService, { type AuditLog, type ComplianceReport } from "@/lib/compliance-audit"
-import type { User } from "@/lib/auth"
+import type { User } from "@clerk/nextjs/server"
 import {
   Shield,
   FileText,
@@ -22,7 +22,7 @@ import {
 } from "lucide-react"
 
 interface ComplianceDashboardProps {
-  user: User
+  user: any // Change User to any to match Clerk's User object
 }
 
 export function ComplianceDashboard({ user }: ComplianceDashboardProps) {

@@ -42,6 +42,7 @@ import {
   ArrowUpRight,
   ArrowDownRight,
 } from "lucide-react"
+import { useUser, useAuth } from "@clerk/nextjs"
 
 // Mock data for the dashboard
 const alerts = [
@@ -69,7 +70,8 @@ const alerts = [
 ]
 
 export default function MicrogridDashboard() {
-  const [user, setUser] = useState<User | null>(null)
+  const { isLoaded, isSignedIn, user } = useUser()
+  const { signOut } = useAuth()
   const [isLoading, setIsLoading] = useState(true)
   const [showUserManagement, setShowUserManagement] = useState(false)
   const [timeframe, setTimeframe] = useState("day")
@@ -80,38 +82,37 @@ export default function MicrogridDashboard() {
   const [currentReport, setCurrentReport] = useState<PerformanceReport | null>(null)
 
   useEffect(() => {
-    const authService = AuthService.getInstance()
-    const currentUser = authService.getCurrentUser()
-    setUser(currentUser)
-    setIsLoading(false)
-  }, [])
+    // Clerk's useUser hook handles loading and user state
+    // We can remove the local isLoading state if Clerk handles it comprehensively
+    if (isLoaded) {
+      setIsLoading(false)
+    }
+  }, [isLoaded])
 
   useEffect(() => {
-    if (user) {
-      const dataService = RealTimeDataService.getInstance()
+    if (isSignedIn && user) {
+      const dataService = RealTimeDataService.getInstance(user?.publicMetadata?.role as string)
       const unsubscribe = dataService.subscribe((data) => {
         setRealTimeData(data)
       })
 
       return unsubscribe
     }
-  }, [user])
+  }, [isSignedIn, user])
 
   const handleLoginSuccess = () => {
-    const authService = AuthService.getInstance()
-    const currentUser = authService.getCurrentUser()
-    setUser(currentUser)
+    // With Clerk, login success is handled automatically by the ClerkProvider
+    // and the useUser hook will update accordingly.
+    // No action needed here.
   }
 
-  const handleLogout = () => {
-    const authService = AuthService.getInstance()
-    authService.logout()
-    setUser(null)
+  const handleLogout = async () => {
+    await signOut()
   }
 
   const handleGenerateReport = (startDate: Date, endDate: Date) => {
     try {
-      const historicalService = HistoricalDataService.getInstance()
+      const historicalService = HistoricalDataService.getInstance(user?.publicMetadata?.role as string)
       const report = historicalService.generatePerformanceReport(startDate, endDate)
       setCurrentReport(report)
       setActiveTab("reports")
@@ -166,10 +167,10 @@ export default function MicrogridDashboard() {
     peakDemandForecast: 2800,
   }
 
-  const dataService = RealTimeDataService.getInstance()
+  const dataService = RealTimeDataService.getInstance(user?.publicMetadata?.role as string)
   const advancedAnalytics = dataService.getAdvancedAnalytics()
 
-  if (isLoading) {
+  if (isLoading || !isLoaded) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-emerald-50 to-teal-50">
         <div className="text-center">
@@ -180,7 +181,7 @@ export default function MicrogridDashboard() {
     )
   }
 
-  if (!user) {
+  if (!isSignedIn) {
     return <LoginForm onLoginSuccess={handleLoginSuccess} />
   }
 
@@ -199,7 +200,7 @@ export default function MicrogridDashboard() {
               Live Data Stream
             </Badge>
             <Badge variant="outline" className="bg-slate-100 text-slate-700 border-slate-300">
-              Classification: {user.role === "admin" ? "RESTRICTED" : "OFFICIAL USE ONLY"}
+              Classification: {user?.publicMetadata?.role === "admin" ? "RESTRICTED" : "OFFICIAL USE ONLY"}
             </Badge>
             <Badge variant="outline" className="bg-teal-100 text-teal-700 border-teal-300">
               System Health: {currentData.systemHealth.toFixed(1)}%
@@ -250,7 +251,7 @@ export default function MicrogridDashboard() {
             <Bell className="h-4 w-4" />
             Alerts
           </TabsTrigger>
-          {user.role === "admin" && (
+          {user?.publicMetadata?.role === "admin" && (
             <TabsTrigger
               value="admin"
               className="flex items-center gap-2 data-[state=active]:bg-emerald-100 data-[state=active]:text-emerald-700"
@@ -259,7 +260,7 @@ export default function MicrogridDashboard() {
               Admin
             </TabsTrigger>
           )}
-          {user.role === "admin" && (
+          {user?.publicMetadata?.role === "admin" && (
             <TabsTrigger
               value="compliance"
               className="flex items-center gap-2 data-[state=active]:bg-emerald-100 data-[state=active]:text-emerald-700"
@@ -533,13 +534,13 @@ export default function MicrogridDashboard() {
           <AlertCenter user={user} />
         </TabsContent>
 
-        {user.role === "admin" && (
+        {user?.publicMetadata?.role === "admin" && (
           <TabsContent value="admin" className="space-y-6">
             <AdminPanel user={user} />
           </TabsContent>
         )}
 
-        {user.role === "admin" && (
+        {user?.publicMetadata?.role === "admin" && (
           <TabsContent value="compliance" className="space-y-6">
             <ComplianceDashboard user={user} />
           </TabsContent>
